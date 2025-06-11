@@ -1,5 +1,5 @@
 // src/App.tsx
-import React from 'react';
+import React, { type JSX } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
@@ -51,8 +51,7 @@ export default function App() {
       {/* Redirect root to /home */}
       <Route path="/" element={<Navigate to="/home" replace />} />
 
-      {/* Fallback for unmatched routes */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
+     
     </Routes>
   );
 }

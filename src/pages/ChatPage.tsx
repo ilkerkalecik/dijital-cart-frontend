@@ -11,7 +11,7 @@ const ChatPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
-  const [otherUser, setOtherUser] = useState<User | null>(null);
+  const [otherUser, setOtherUser] = useState<User | null>(null);    
   const [autoScrollEnabled, setAutoScrollEnabled] = useState(true);
   const clientRef = useRef<Client | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);

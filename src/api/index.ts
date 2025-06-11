@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const instance = axios.create({
     baseURL: '/api',
+    responseType: 'json',
 });
 
 instance.interceptors.request.use((config) => {
@@ -19,6 +20,7 @@ export interface User {
     email: string;
     bio?: string;
     job?: string;
+    profilFoto?: string | null;
 }
 
 export interface Message {
@@ -27,20 +29,19 @@ export interface Message {
     sender: User;
     recipient: User;
     timestamp: string;
-  }
-  
+}
 
-interface SigninResponseDto {
+export interface SigninResponseDto {
     message: string;
     success: boolean;
 }
 
-interface DtoSocialMediaResponse {
+export interface DtoSocialMediaResponse {
     platform: string;
     url: string;
 }
 
-interface Proje {
+export interface Proje {
     id: number;
     adi: string;
     aciklama: string;
@@ -49,7 +50,14 @@ interface Proje {
     gorselUrl: string;
 }
 
-interface Yetenek {
+export enum SocialPlatform {
+    GITHUB = 'GITHUB',
+    TWITTER = 'TWITTER',
+    INSTAGRAM = 'INSTAGRAM',
+    LINKEDIN = 'LINKEDIN',
+}
+
+export interface Yetenek {
     id: number;
     aciklama: string;
 }
@@ -76,28 +84,27 @@ export const api = {
         bio: string,
         job: string
     ) =>
-        instance.put<SigninResponseDto>('/auth/update', {
-            name,
-            surname,
-            email,
-            password,
-            bio,
-            job
-        }),
+        instance.put<SigninResponseDto>('/auth/update', { name, surname, email, password, bio, job }),
 
     logout: () =>
         instance.post<SigninResponseDto>('/auth/logout'),
 
-    uploadPhoto: (file: File) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        return instance.put<SigninResponseDto>(
-            '/auth/upload-photo',
-            formData,
-            { headers: { 'Content-Type': 'multipart/form-data' } }
+    uploadProfilePhoto: (formData: FormData): Promise<string> =>
+        instance.put<string>('/auth/upload-photo', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        }).then(res => res.data) as Promise<string>,
+
+    // Statik dosyaları blob olarak almak için
+    getUserPhoto: (photoPath: string): Promise<Blob> => {
+        // Ensure it begins with a slash:
+        const normalized = photoPath.startsWith('/') ? photoPath : `/${photoPath}`;
+        const url = `http://localhost:8080${normalized}`;
+        return Promise.resolve(
+            axios
+                .get<Blob>(url, { responseType: 'blob' })
+                .then(res => res.data)
         );
     },
-
     // ----- SOCIAL MEDIA -----
     getSocialLinks: () =>
         instance.get<DtoSocialMediaResponse[]>('/sosyal-medya'),
@@ -113,13 +120,7 @@ export const api = {
         projeLinki: string,
         gorselUrl: string
     ) =>
-        instance.post<Proje>('/projeler/ekle', {
-            adi,
-            aciklama,
-            teknolojiler,
-            projeLinki,
-            gorselUrl
-        }),
+        instance.post<Proje>('/projeler/ekle', { adi, aciklama, teknolojiler, projeLinki, gorselUrl }),
 
     listProjects: () =>
         instance.get<Proje[]>('/projeler/listele'),
@@ -132,13 +133,7 @@ export const api = {
         projeLinki: string,
         gorselUrl: string
     ) =>
-        instance.put<Proje>(`/projeler/guncelle/${id}`, {
-            adi,
-            aciklama,
-            teknolojiler,
-            projeLinki,
-            gorselUrl
-        }),
+        instance.put<Proje>(`/projeler/guncelle/${id}`, { adi, aciklama, teknolojiler, projeLinki, gorselUrl }),
 
     deleteProject: (id: number) =>
         instance.delete<void>(`/projeler/sil/${id}`),
@@ -146,6 +141,7 @@ export const api = {
     // ------- YETENEKLER -------
     getSkills: () =>
         instance.get<Yetenek[]>('/yetenekler/listele'),
+
     getAllUsers: () =>
         instance.get<User[]>('/auth/list'),
 
@@ -154,10 +150,6 @@ export const api = {
 
     removeSkill: (yetenekId: number) =>
         instance.delete<string>(`/yetenekler/sil/${yetenekId}`),
-
-    // ------- KULLANICILAR -------
-    listUsers: () =>
-        instance.get<User[]>('/auth/list'),
 
     // ------- MESSAGES -------
     sendMessage: (recipientId: number, text: string) =>
